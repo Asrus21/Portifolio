@@ -172,7 +172,7 @@
       });
     }
 
-    /* ---------- 7. REVEAL AO SCROLL ---------- */
+    /* ---------- 7. REVEAL AO SCROLL (seções + cards) ---------- */
     if ("IntersectionObserver" in window) {
       const observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
@@ -181,10 +181,17 @@
             observer.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.12, rootMargin: "0px 0px -50px 0px" });
+      }, { threshold: 0.15, rootMargin: "0px 0px -100px 0px" });
 
+      // Anima as 4 seções principais (01, 02, 03, 04)
+      document.querySelectorAll("section.section").forEach(function (el) {
+        el.classList.add("reveal");
+        observer.observe(el);
+      });
+
+      // Anima cards individuais dentro das seções
       document.querySelectorAll(
-        ".skill-card, .project-card, .contact-card, .section-head"
+        ".skill-card, .project-card, .contact-card"
       ).forEach(function (el) {
         el.classList.add("reveal");
         observer.observe(el);
