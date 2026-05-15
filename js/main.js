@@ -73,140 +73,203 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     /* ========================================================
-       4. SCROLL SUAVE — ANIMAÇÃO MANUAL (RAF + EASING)
+       4. NAVEGAÇÃO ENTRE SLIDES (estilo React Navigation push)
        ======================================================== */
-    const HEADER_H = 80;
-    const DURATION = 1000; // 1 segundo
+    const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
+    let currentIndex = 0;
+    let isTransitioning = false;
+    const TRANSITION_MS = 850;
 
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    function updateSlideClasses() {
+      slides.forEach(function (slide, i) {
+        slide.classList.remove("slide-active", "slide-prev", "slide-next");
+        if (i === currentIndex) {
+          slide.classList.add("slide-active");
+        } else if (i < currentIndex) {
+          slide.classList.add("slide-prev");
+        } else {
+          slide.classList.add("slide-next");
+        }
+      });
     }
 
-    function smoothScrollTo(targetY) {
-      targetY = Math.max(0, targetY);
-      const startY = window.pageYOffset || document.documentElement.scrollTop;
-      const distance = targetY - startY;
+    function goToSlide(index) {
+      if (isTransitioning) return;
+      if (index < 0 || index >= slides.length) return;
+      if (index === currentIndex) return;
 
-      console.log("[Portfolio] scroll: " + startY + " → " + targetY);
+      isTransitioning = true;
+      currentIndex = index;
+      updateSlideClasses();
 
-      if (Math.abs(distance) < 1) return;
+      // Atualiza hash da URL para refletir a seção atual (sem disparar scroll)
+      const slideId = slides[currentIndex].id;
+      if (slideId && history.replaceState) {
+        history.replaceState(null, "", "#" + slideId);
+      }
 
-      const startTime = performance.now();
+      setTimeout(function () {
+        isTransitioning = false;
+      }, TRANSITION_MS);
+    }
 
-      function step(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / DURATION, 1);
-        const eased = easeInOutCubic(progress);
-        const newY = startY + distance * eased;
+    // Estado inicial
+    updateSlideClasses();
 
-        window.scrollTo(0, newY);
+    // Se a URL tem um hash ao abrir, vai direto pro slide certo
+    if (window.location.hash) {
+      const targetId = window.location.hash.slice(1);
+      const targetIndex = slides.findIndex(function (s) { return s.id === targetId; });
+      if (targetIndex !== -1) {
+        currentIndex = targetIndex;
+        updateSlideClasses();
+      }
+    }
 
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          console.log("[Portfolio] scroll concluído");
+    /* ---------- 5. CONTROLES DE NAVEGAÇÃO ---------- */
+
+    // Roda do mouse — avança ou volta um slide
+    let wheelLock = false;
+    window.addEventListener("wheel", function (e) {
+      if (e.ctrlKey) return; // permite zoom
+
+      // Se a seção atual tem rolagem interna (conteúdo maior que a tela),
+      // deixa o scroll nativo funcionar dentro dela
+      const active = slides[currentIndex];
+      const hasInnerScroll = active.scrollHeight > active.clientHeight;
+      if (hasInnerScroll) {
+        const atTop    = active.scrollTop === 0;
+        const atBottom = Math.abs(active.scrollHeight - active.clientHeight - active.scrollTop) < 2;
+        if ((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) {
+          return; // permite scroll interno
         }
       }
 
-      requestAnimationFrame(step);
-    }
+      e.preventDefault();
+      if (wheelLock || isTransitioning) return;
+      wheelLock = true;
+      setTimeout(function () { wheelLock = false; }, TRANSITION_MS);
 
-    /* ---------- 5. INTERCEPTA LINKS DE ÂNCORA ---------- */
-    const anchorLinks = document.querySelectorAll('a[href^="#"]');
-    console.log("[Portfolio] " + anchorLinks.length + " links de âncora encontrados");
+      if (e.deltaY > 0) {
+        goToSlide(currentIndex + 1);
+      } else if (e.deltaY < 0) {
+        goToSlide(currentIndex - 1);
+      }
+    }, { passive: false });
 
-    anchorLinks.forEach(function (link) {
+    // Teclado — setas e PageUp/PageDown
+    window.addEventListener("keydown", function (e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (["ArrowDown", "PageDown", " "].includes(e.key)) {
+        e.preventDefault();
+        goToSlide(currentIndex + 1);
+      } else if (["ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        goToSlide(currentIndex - 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        goToSlide(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        goToSlide(slides.length - 1);
+      }
+    });
+
+    // Touch (mobile) — swipe vertical
+    let touchStartY = 0;
+    window.addEventListener("touchstart", function (e) {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    window.addEventListener("touchend", function (e) {
+      const touchEndY = e.changedTouches[0].clientY;
+      const diff = touchStartY - touchEndY;
+      if (Math.abs(diff) < 50) return; // ignora toques pequenos
+      if (diff > 0) goToSlide(currentIndex + 1);
+      else goToSlide(currentIndex - 1);
+    }, { passive: true });
+
+    /* ---------- 6. LINKS DE ÂNCORA NAVEGAM PARA O SLIDE CORRETO ---------- */
+    document.querySelectorAll('a[href^="#"]').forEach(function (link) {
       link.addEventListener("click", function (e) {
         const id = link.getAttribute("href");
         if (!id || id === "#") return;
-
-        const target = document.querySelector(id);
-        if (!target) {
-          console.warn("[Portfolio] alvo não encontrado: " + id);
-          return;
-        }
-
+        const targetIndex = slides.findIndex(function (s) { return s.id === id.slice(1); });
+        if (targetIndex === -1) return;
         e.preventDefault();
-        e.stopPropagation();
-
-        const rect = target.getBoundingClientRect();
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-        const targetY = rect.top + currentScroll - HEADER_H;
-
-        smoothScrollTo(targetY);
+        goToSlide(targetIndex);
       });
     });
 
-    /* ---------- 6. BOTÃO VOLTAR AO TOPO (fade gradual) ---------- */
+    /* ---------- 7. BOTÃO VOLTAR AO TOPO (fade gradual baseado no slide) ---------- */
     const backToTop = document.getElementById("backToTop");
     if (backToTop) {
-      // Faixa onde o botão aparece esmaecendo:
-      // - opacidade 0 até FADE_START
-      // - opacidade interpolada entre FADE_START e FADE_END
-      // - opacidade 1 a partir de FADE_END
-      const FADE_START = 150;
-      const FADE_END   = 700;
-
       function updateBackToTop() {
-        const y = window.pageYOffset || document.documentElement.scrollTop;
+        // Esmaece conforme avança pelos slides
         let opacity;
-
-        if (y <= FADE_START) {
+        if (currentIndex === 0) {
           opacity = 0;
-        } else if (y >= FADE_END) {
-          opacity = 1;
         } else {
-          opacity = (y - FADE_START) / (FADE_END - FADE_START);
+          // 1 slide = 0.4, 2 = 0.7, 3+ = 1
+          opacity = Math.min(1, currentIndex * 0.35 + 0.05);
         }
-
         backToTop.style.opacity = opacity;
         backToTop.style.transform = "translateY(" + ((1 - opacity) * 20) + "px)";
         backToTop.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
       }
 
-      window.addEventListener("scroll", updateBackToTop, { passive: true });
-      updateBackToTop(); // estado inicial
+      // Atualiza sempre que o slide muda — observamos via MutationObserver
+      const moBack = new MutationObserver(updateBackToTop);
+      slides.forEach(function (s) {
+        moBack.observe(s, { attributes: true, attributeFilter: ["class"] });
+      });
+      updateBackToTop();
 
       backToTop.addEventListener("click", function () {
-        smoothScrollTo(0);
+        goToSlide(0);
       });
     }
 
-    /* ---------- 7. ANIMAÇÕES AO SCROLL ---------- */
-    if ("IntersectionObserver" in window) {
+    /* ---------- 8. REVEAL DOS CARDS QUANDO SLIDE FICA ATIVO ---------- */
+    document.querySelectorAll(
+      ".skill-card, .project-card, .contact-card"
+    ).forEach(function (el) {
+      el.classList.add("reveal");
+    });
 
-      // (a) Seções como slides — push de baixo a cada entrada (sobe e desce)
-      const sectionObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("in-view");
-          } else {
-            entry.target.classList.remove("in-view");
-          }
-        });
-      }, { threshold: 0.35 });
-
-      document.querySelectorAll("section.section, .hero").forEach(function (el) {
-        sectionObserver.observe(el);
-      });
-
-      // (b) Cards individuais — fade-in só na primeira aparição
-      const cardObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("in-view");
-            cardObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12, rootMargin: "0px 0px -50px 0px" });
-
-      document.querySelectorAll(
-        ".skill-card, .project-card, .contact-card"
-      ).forEach(function (el) {
-        el.classList.add("reveal");
-        cardObserver.observe(el);
+    // Observa mudança de classe nos slides para disparar reveal dos cards
+    function revealCardsOfSlide(slide) {
+      const cards = slide.querySelectorAll(".reveal");
+      cards.forEach(function (card, idx) {
+        setTimeout(function () {
+          card.classList.add("in-view");
+        }, 300 + idx * 60); // espera o push + cascata
       });
     }
+    function hideCardsOfSlide(slide) {
+      slide.querySelectorAll(".reveal").forEach(function (card) {
+        card.classList.remove("in-view");
+      });
+    }
+
+    const slideStateObserver = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        const slide = m.target;
+        if (slide.classList.contains("slide-active")) {
+          revealCardsOfSlide(slide);
+        } else {
+          hideCardsOfSlide(slide);
+        }
+      });
+    });
+
+    slides.forEach(function (slide) {
+      slideStateObserver.observe(slide, { attributes: true, attributeFilter: ["class"] });
+      // Dispara para o slide inicial
+      if (slide.classList.contains("slide-active")) {
+        revealCardsOfSlide(slide);
+      }
+    });
 
     console.log("[Portfolio] tudo pronto ✓");
   }
