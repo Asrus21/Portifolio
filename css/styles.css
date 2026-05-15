@@ -57,9 +57,13 @@
 * { margin: 0; padding: 0; }
 
 html {
-  /* Scroll snap para efeito de apresentação (push entre slides) */
-  scroll-snap-type: y mandatory;
   scroll-behavior: auto;
+}
+
+/* Body trava o scroll nativo — a navegação será controlada via JS */
+body.slides-mode {
+  overflow: hidden;
+  height: 100vh;
 }
 
 body {
@@ -279,22 +283,74 @@ ul { list-style: none; }
 }
 
 /* --- Seções --- */
-/* --- Seções como slides de apresentação --- */
+/* --- Slides empilhados (modo apresentação) ---
+   Cada seção ocupa a tela inteira e fica posicionada absolutamente.
+   O JS controla qual está ativa, e ambas (atual + próxima) se movem
+   simultaneamente quando o usuário usa o scroll/teclado.
+*/
+.slides-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .hero,
 .section {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  min-height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  padding: 7rem 2.5rem 4rem;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
+
+  /* Estado padrão: fora da tela (abaixo) */
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 800ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
 }
 
-.section {
+/* Slide ATIVO: no centro da tela */
+.hero.slide-active,
+.section.slide-active {
+  transform: translateY(0);
+  opacity: 1;
+  z-index: 2;
+}
+
+/* Slide ANTERIOR: empurrado pra cima (saiu por cima) */
+.hero.slide-prev,
+.section.slide-prev {
+  transform: translateY(-100%);
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Slide PRÓXIMO: posicionado abaixo, esperando */
+.hero.slide-next,
+.section.slide-next {
+  transform: translateY(100%);
+  opacity: 0;
+  z-index: 1;
+}
+
+/* Conteúdo interno das seções fica centralizado e com largura limitada */
+.section > * {
   max-width: var(--container);
-  margin: 0 auto;
-  padding: 7rem 2.5rem 4rem;
   width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Hero mantém comportamento próprio */
+.hero {
+  padding: 8rem 2.5rem 4rem;
 }
 
 .section-head {
@@ -754,34 +810,7 @@ ul { list-style: none; }
   .btn { width: 100%; justify-content: center; }
 }
 
-/* Hero entra animado também via classe .in-view (igual seções) */
-.hero > * {
-  opacity: 0;
-  transform: translateY(100vh);
-  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-              transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.hero.in-view > * {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* --- Push do PowerPoint: conteúdo da seção entra inteiro de baixo --- */
-.section > * {
-  opacity: 0;
-  transform: translateY(100vh);
-  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-              transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.section.in-view > * {
-  opacity: 1;
-  transform: translateY(0);
-}
-/* Pequeno atraso em elementos sucessivos para sensação de cascata */
-.section.in-view > *:nth-child(2) { transition-delay: 80ms; }
-.section.in-view > *:nth-child(3) { transition-delay: 160ms; }
-.section.in-view > *:nth-child(4) { transition-delay: 240ms; }
-
+/* --- Reveal dos cards (mantido para animar conteúdo interno) --- */
 .reveal {
   opacity: 0;
   transform: translateY(24px);
