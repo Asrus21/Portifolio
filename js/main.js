@@ -1,9 +1,5 @@
 /* ========================================================
    PORTFOLIO · MAIN SCRIPT
-   - Tema claro/escuro (persistente)
-   - Troca de idioma PT/EN (persistente)
-   - Scroll suave aprimorado (lerp)
-   - Botão voltar ao topo
    ======================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,45 +8,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const root = document.documentElement;
   const themeToggle = document.getElementById("themeToggle");
 
-  // Prioridade: localStorage > preferência do sistema > claro
   const savedTheme = localStorage.getItem("theme");
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
-  root.setAttribute("data-theme", initialTheme);
+  root.setAttribute("data-theme", savedTheme || (prefersDark ? "dark" : "light"));
 
   themeToggle.addEventListener("click", () => {
-    const current = root.getAttribute("data-theme");
-    const next = current === "dark" ? "light" : "dark";
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
   });
 
   /* -------------------- 2. IDIOMA -------------------- */
   const langButton = document.getElementById("langButton");
-  const langMenu = document.getElementById("langMenu");
-  const langLabel = document.getElementById("langLabel");
+  const langMenu   = document.getElementById("langMenu");
+  const langLabel  = document.getElementById("langLabel");
 
   function applyLang(lang) {
     if (!translations[lang]) return;
     document.querySelectorAll("[data-i18n]").forEach(el => {
-      const key = el.getAttribute("data-i18n");
-      const value = translations[lang][key];
-      if (value !== undefined) el.textContent = value;
+      const val = translations[lang][el.dataset.i18n];
+      if (val !== undefined) el.textContent = val;
     });
-    document.documentElement.setAttribute("lang", lang === "pt" ? "pt-BR" : "en");
+    root.lang = lang === "pt" ? "pt-BR" : "en";
     langLabel.textContent = lang.toUpperCase();
     localStorage.setItem("lang", lang);
   }
 
-  // Aplica idioma salvo ou padrão (pt)
-  const savedLang = localStorage.getItem("lang") || "pt";
-  applyLang(savedLang);
+  applyLang(localStorage.getItem("lang") || "pt");
 
-  langButton.addEventListener("click", (e) => {
+  langButton.addEventListener("click", e => {
     e.stopPropagation();
-    const expanded = langButton.getAttribute("aria-expanded") === "true";
-    langButton.setAttribute("aria-expanded", String(!expanded));
-    langMenu.hidden = expanded;
+    const open = langButton.getAttribute("aria-expanded") === "true";
+    langButton.setAttribute("aria-expanded", String(!open));
+    langMenu.hidden = open;
   });
 
   langMenu.querySelectorAll("li").forEach(li => {
@@ -61,111 +51,86 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Fecha o menu de idioma ao clicar fora
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", e => {
     if (!langMenu.hidden && !e.target.closest(".lang-switch")) {
       langMenu.hidden = true;
       langButton.setAttribute("aria-expanded", "false");
     }
   });
 
-  /* -------------------- 3. BOTÃO VOLTAR AO TOPO -------------------- */
-  const backToTop = document.getElementById("backToTop");
-
-  function toggleBackToTop() {
-    if (window.scrollY > 500) {
-      backToTop.classList.add("visible");
-    } else {
-      backToTop.classList.remove("visible");
-    }
-  }
-  window.addEventListener("scroll", toggleBackToTop, { passive: true });
-  toggleBackToTop();
-
-  backToTop.addEventListener("click", () => {
-    smoothScrollTo(0);
-  });
-
-  /* -------------------- 4. ANO DO RODAPÉ -------------------- */
+  /* -------------------- 3. ANO DO RODAPÉ -------------------- */
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  /* -------------------- 5. SCROLL SUAVE PARA LINKS DE ÂNCORA -------------------- */
+  /* ========================================================
+     4. SCROLL SUAVE — abordagem correta com easing + RAF
+     
+     Como funciona:
+     - Não interceptamos o wheel (isso quebra em Chrome/Firefox)
+     - Para cliques em âncoras e botão "voltar ao topo", usamos
+       uma função animateTo() que faz lerp com easing suave
+     - O scroll do mouse permanece nativo (já é suave em todos
+       os SOs modernos com inércia de trackpad/mouse)
+     - Resultado: click → transição animada; scroll → nativo fluido
+     ======================================================== */
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const HEADER_H = 80; // altura do header fixo
+  const DURATION = 900; // duração da animação em ms
+
+  // Easing cúbico — começa rápido, desacelera suavemente no final
+  function easeInOutCubic(t) {
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function animateTo(targetY) {
+    if (reduceMotion) {
+      window.scrollTo({ top: targetY });
+      return;
+    }
+
+    const startY    = window.scrollY;
+    const distance  = targetY - startY;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed  = now - startTime;
+      const progress = Math.min(elapsed / DURATION, 1);
+      const eased    = easeInOutCubic(progress);
+
+      window.scrollTo(0, startY + distance * eased);
+
+      if (progress < 1) requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  /* -------------------- 5. ÂNCORAS DO MENU -------------------- */
   document.querySelectorAll('a[href^="#"]').forEach(link => {
-    link.addEventListener("click", (e) => {
-      const targetId = link.getAttribute("href");
-      if (targetId === "#") return;
-      const target = document.querySelector(targetId);
+    link.addEventListener("click", e => {
+      const id = link.getAttribute("href");
+      if (id === "#") return;
+      const target = document.querySelector(id);
       if (!target) return;
       e.preventDefault();
-      const offset = 80; // altura aproximada do header
-      const targetY = target.getBoundingClientRect().top + window.scrollY - offset;
-      smoothScrollTo(targetY);
+      const y = target.getBoundingClientRect().top + window.scrollY - HEADER_H;
+      animateTo(Math.max(0, y));
     });
   });
 
-  /* -------------------- 6. SCROLL SUAVE GLOBAL (LERP) --------------------
-     Cria uma sensação mais "macia" no scroll da página, similar à experiência
-     de bibliotecas como Lenis, mas em vanilla JS — sem dependências externas.
-     Respeita preferências de movimento reduzido.
-  ------------------------------------------------------------------------- */
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* -------------------- 6. BOTÃO VOLTAR AO TOPO -------------------- */
+  const backToTop = document.getElementById("backToTop");
 
-  // Detecção: dispositivos touch tendem a ter scroll nativo já bem suave,
-  // e interferir nele pode quebrar a experiência. Aplicamos apenas em desktop.
-  const isTouch = window.matchMedia("(pointer: coarse)").matches;
+  window.addEventListener("scroll", () => {
+    backToTop.classList.toggle("visible", window.scrollY > 500);
+  }, { passive: true });
 
-  let targetScroll = window.scrollY;
-  let currentScroll = window.scrollY;
-  const ease = 0.1; // quanto menor, mais suave (e mais lento)
-  let rafId = null;
-  let isProgrammatic = false;
+  backToTop.addEventListener("click", () => animateTo(0));
 
-  function rafLoop() {
-    currentScroll += (targetScroll - currentScroll) * ease;
-    if (Math.abs(targetScroll - currentScroll) < 0.5) {
-      currentScroll = targetScroll;
-      window.scrollTo(0, currentScroll);
-      rafId = null;
-      isProgrammatic = false;
-      return;
-    }
-    window.scrollTo(0, currentScroll);
-    rafId = requestAnimationFrame(rafLoop);
-  }
-
-  function smoothScrollTo(y) {
-    targetScroll = Math.max(0, y);
-    if (reduceMotion) {
-      window.scrollTo(0, targetScroll);
-      return;
-    }
-    isProgrammatic = true;
-    if (!rafId) rafId = requestAnimationFrame(rafLoop);
-  }
-
-  if (!reduceMotion && !isTouch) {
-    // Intercepta o wheel para suavizar progressivamente
-    window.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      // Ajuste do delta: ctrlKey indica zoom, deixa o nativo cuidar
-      if (e.ctrlKey) return;
-      targetScroll += e.deltaY;
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
-      if (!rafId) rafId = requestAnimationFrame(rafLoop);
-    }, { passive: false });
-
-    // Sincroniza targetScroll quando o usuário usa teclado, barra de rolagem ou outros meios
-    window.addEventListener("scroll", () => {
-      if (!isProgrammatic && !rafId) {
-        targetScroll = window.scrollY;
-        currentScroll = window.scrollY;
-      }
-    }, { passive: true });
-  }
-
-  /* -------------------- 7. ANIMAÇÃO DE ENTRADA AO SCROLL -------------------- */
+  /* -------------------- 7. REVEAL AO SCROLL -------------------- */
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -175,8 +140,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }, { threshold: 0.12, rootMargin: "0px 0px -50px 0px" });
 
-  document.querySelectorAll(".skill-card, .project-card, .contact-card, .section-head").forEach(el => {
+  document.querySelectorAll(
+    ".skill-card, .project-card, .contact-card, .section-head"
+  ).forEach(el => {
     el.classList.add("reveal");
     observer.observe(el);
   });
+
 });
