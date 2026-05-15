@@ -172,29 +172,39 @@
       });
     }
 
-    /* ---------- 7. REVEAL AO SCROLL (seções + cards) ---------- */
+    /* ---------- 7. ANIMAÇÕES AO SCROLL ---------- */
     if ("IntersectionObserver" in window) {
-      const observer = new IntersectionObserver(function (entries) {
+
+      // (a) Seções como slides — push de baixo a cada entrada (sobe e desce)
+      const sectionObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add("in-view");
-            observer.unobserve(entry.target);
+          } else {
+            entry.target.classList.remove("in-view");
           }
         });
-      }, { threshold: 0.15, rootMargin: "0px 0px -100px 0px" });
+      }, { threshold: 0.35 });
 
-      // Anima as 4 seções principais (01, 02, 03, 04)
-      document.querySelectorAll("section.section").forEach(function (el) {
-        el.classList.add("reveal");
-        observer.observe(el);
+      document.querySelectorAll("section.section, .hero").forEach(function (el) {
+        sectionObserver.observe(el);
       });
 
-      // Anima cards individuais dentro das seções
+      // (b) Cards individuais — fade-in só na primeira aparição
+      const cardObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+            cardObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -50px 0px" });
+
       document.querySelectorAll(
         ".skill-card, .project-card, .contact-card"
       ).forEach(function (el) {
         el.classList.add("reveal");
-        observer.observe(el);
+        cardObserver.observe(el);
       });
     }
 
