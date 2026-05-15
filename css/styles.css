@@ -308,27 +308,26 @@ ul { list-style: none; }
   flex-direction: column;
   justify-content: center;
 
-  /* Estado padrão: fora da tela (abaixo) */
+  /* Estado padrão: fora da tela (abaixo), visível */
   transform: translateY(100%);
-  opacity: 0;
-  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 800ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, opacity;
+  opacity: 1;
+  transition: transform 1100ms cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: transform;
+  pointer-events: none;
 }
 
 /* Slide ATIVO: no centro da tela */
 .hero.slide-active,
 .section.slide-active {
   transform: translateY(0);
-  opacity: 1;
   z-index: 2;
+  pointer-events: auto;
 }
 
 /* Slide ANTERIOR: empurrado pra cima (saiu por cima) */
 .hero.slide-prev,
 .section.slide-prev {
   transform: translateY(-100%);
-  opacity: 0;
   z-index: 1;
 }
 
@@ -336,8 +335,67 @@ ul { list-style: none; }
 .hero.slide-next,
 .section.slide-next {
   transform: translateY(100%);
-  opacity: 0;
   z-index: 1;
+}
+
+/* ============================================
+   CASCATA INTERNA DOS ELEMENTOS DENTRO DO SLIDE
+   ============================================ */
+
+/* Estado base dos filhos diretos das seções: empurrados pra baixo, invisíveis */
+.section > .section-head,
+.section > .about-grid,
+.section > .skills-grid,
+.section > .projects-grid,
+.section > .contact-lead,
+.section > .contact-grid,
+.hero > .hero-inner {
+  opacity: 0;
+  transform: translateY(60px);
+  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Slide ATIVO: revela os filhos em cascata */
+.slide-active > .section-head,
+.slide-active > .about-grid,
+.slide-active > .skills-grid,
+.slide-active > .projects-grid,
+.slide-active > .contact-lead,
+.slide-active > .contact-grid,
+.slide-active > .hero-inner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Atrasos para criar a cascata (de cima para baixo na entrada) */
+.slide-active > *:nth-child(1) { transition-delay: 250ms; }
+.slide-active > *:nth-child(2) { transition-delay: 400ms; }
+.slide-active > *:nth-child(3) { transition-delay: 550ms; }
+
+/* Slide ANTERIOR: filhos saem em cascata invertida (último primeiro) */
+.slide-prev > .section-head,
+.slide-prev > .about-grid,
+.slide-prev > .skills-grid,
+.slide-prev > .projects-grid,
+.slide-prev > .contact-lead,
+.slide-prev > .contact-grid,
+.slide-prev > .hero-inner {
+  opacity: 0;
+  transform: translateY(-60px);
+}
+
+/* Slide PRÓXIMO: filhos voltam ao estado inicial (preparados) */
+.slide-next > .section-head,
+.slide-next > .about-grid,
+.slide-next > .skills-grid,
+.slide-next > .projects-grid,
+.slide-next > .contact-lead,
+.slide-next > .contact-grid,
+.slide-next > .hero-inner {
+  opacity: 0;
+  transform: translateY(60px);
+  transition-delay: 0ms !important;
 }
 
 /* Conteúdo interno das seções fica centralizado e com largura limitada */
