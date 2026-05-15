@@ -137,16 +137,35 @@
       });
     });
 
-    /* ---------- 6. BOTÃO VOLTAR AO TOPO ---------- */
+    /* ---------- 6. BOTÃO VOLTAR AO TOPO (fade gradual) ---------- */
     const backToTop = document.getElementById("backToTop");
     if (backToTop) {
-      window.addEventListener("scroll", function () {
-        if (window.pageYOffset > 500) {
-          backToTop.classList.add("visible");
+      // Faixa onde o botão aparece esmaecendo:
+      // - opacidade 0 até FADE_START
+      // - opacidade interpolada entre FADE_START e FADE_END
+      // - opacidade 1 a partir de FADE_END
+      const FADE_START = 150;
+      const FADE_END   = 700;
+
+      function updateBackToTop() {
+        const y = window.pageYOffset || document.documentElement.scrollTop;
+        let opacity;
+
+        if (y <= FADE_START) {
+          opacity = 0;
+        } else if (y >= FADE_END) {
+          opacity = 1;
         } else {
-          backToTop.classList.remove("visible");
+          opacity = (y - FADE_START) / (FADE_END - FADE_START);
         }
-      }, { passive: true });
+
+        backToTop.style.opacity = opacity;
+        backToTop.style.transform = "translateY(" + ((1 - opacity) * 20) + "px)";
+        backToTop.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
+      }
+
+      window.addEventListener("scroll", updateBackToTop, { passive: true });
+      updateBackToTop(); // estado inicial
 
       backToTop.addEventListener("click", function () {
         smoothScrollTo(0);
