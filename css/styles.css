@@ -57,8 +57,8 @@
 * { margin: 0; padding: 0; }
 
 html {
-  scroll-behavior: smooth;
-  /* Suavização extra do scroll será reforçada via JS (Lenis-like) */
+  /* scroll-behavior é gerenciado pelo JS para evitar conflito com lerp */
+  scroll-behavior: auto;
 }
 
 body {
