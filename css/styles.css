@@ -693,7 +693,7 @@ ul { list-style: none; }
   font-size: 0.78rem;
 }
 
-/* --- Botão voltar ao topo --- */
+/* --- Botão voltar ao topo (opacidade controlada via JS para fade gradual) --- */
 .back-to-top {
   position: fixed;
   bottom: 2rem;
@@ -707,15 +707,11 @@ ul { list-style: none; }
   place-items: center;
   box-shadow: var(--shadow-md);
   opacity: 0;
-  pointer-events: none;
   transform: translateY(20px);
-  transition: opacity var(--t-med), transform var(--t-med), background var(--t-fast);
+  pointer-events: none;
+  transition: background var(--t-fast);
   z-index: 90;
-}
-.back-to-top.visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
+  will-change: opacity, transform;
 }
 .back-to-top:hover { background: var(--accent); }
 
