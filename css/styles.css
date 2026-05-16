@@ -731,6 +731,70 @@ ul { list-style: none; }
   to { transform: rotate(360deg); }
 }
 
+/* ============================================
+   VISUAL 3 — PÓDIO DE RANKING (Rank LoL/TFT)
+   ============================================ */
+.project-visual-rank {
+  background: linear-gradient(160deg, #1e2a4a 0%, #0a1228 70%, #060b1a 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.project-visual-rank .rank-podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding-bottom: 18px;
+}
+.project-visual-rank .podium-bar {
+  width: 52px;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.95);
+  animation: podiumRise 2.6s ease-in-out infinite;
+}
+.project-visual-rank .podium-bar.first {
+  height: 96px;
+  background: linear-gradient(180deg, #ffd75e, #e0a32e);
+  animation-delay: 0.3s;
+}
+.project-visual-rank .podium-bar.second {
+  height: 68px;
+  background: linear-gradient(180deg, #d4dae6, #9aa3b5);
+  animation-delay: 0s;
+}
+.project-visual-rank .podium-bar.third {
+  height: 48px;
+  background: linear-gradient(180deg, #d68a52, #a55f30);
+  animation-delay: 0.6s;
+}
+.project-visual-rank .rank-crown {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.8rem;
+  color: #ffd75e;
+  text-shadow: 0 0 18px rgba(255, 215, 94, 0.7);
+  animation: crownFloat 3s ease-in-out infinite;
+}
+@keyframes podiumRise {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes crownFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
 .project-body { padding: 1.75rem; flex: 1; display: flex; flex-direction: column; }
 .project-tag {
   font-family: var(--font-mono);
