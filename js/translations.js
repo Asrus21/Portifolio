@@ -39,6 +39,7 @@ const translations = {
     "projects.view": "Ver projeto →",
     "projects.p1": "Aplicativo desktop para gerenciar uma fila de pedidos de música durante lives na Twitch. Permite ao streamer organizar, priorizar e tocar as músicas pedidas pelos espectadores.",
     "projects.p2": "Integração com a API do Spotify que permite aos espectadores da live executarem comandos no chat da Twitch para interagir com a playlist do streamer em tempo real.",
+    "projects.p3": "Ferramenta que consulta e exibe o ranque de jogadores de League of Legends e Teamfight Tactics, integrada ao chat da Twitch para uso durante as lives.",
 
     "contact.title": "Vamos conversar",
     "contact.lead": "Aberto a oportunidades remotas, presenciais ou semipresenciais na região de Salvador-BA.",
@@ -85,6 +86,7 @@ const translations = {
     "projects.view": "View project →",
     "projects.p1": "Desktop application to manage a song request queue during Twitch live streams. Lets the streamer organize, prioritize and play songs requested by viewers.",
     "projects.p2": "Spotify API integration that allows live viewers to run commands in Twitch chat to interact with the streamer's playlist in real time.",
+    "projects.p3": "Tool that fetches and displays the rank of League of Legends and Teamfight Tactics players, integrated into Twitch chat for use during live streams.",
 
     "contact.title": "Let's talk",
     "contact.lead": "Open to remote, onsite or hybrid opportunities in the Salvador-BA area.",
