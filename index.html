@@ -6,13 +6,17 @@
   <meta name="description" content="Portfólio de Thiago Santos Arruda de Souza — Desenvolvedor de Software" />
   <title>Thiago Souza · Portfólio</title>
 
+  <!-- Base: garante que CSS/JS/imagens carreguem corretamente
+       quando o site é servido sob asrus.app/Portifolio via rewrite -->
+  <base href="/Portifolio/" />
+
   <!-- Fontes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
   <!-- Estilos -->
-  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="slides-mode">
 
@@ -85,7 +89,7 @@
 
       <div class="about-grid">
         <div class="about-photo">
-          <img src="./assets/minha-foto.png" alt="Foto de Thiago Souza" onerror="this.style.opacity='0';this.parentElement.classList.add('no-photo')" />
+          <img src="assets/minha-foto.png" alt="Foto de Thiago Souza" onerror="this.style.opacity='0';this.parentElement.classList.add('no-photo')" />
           <span class="photo-placeholder" data-i18n="about.photoPlaceholder">Adicione sua foto em assets/minha-foto.png</span>
         </div>
         <div class="about-text">
@@ -285,7 +289,7 @@
   </button>
 
   <!-- Scripts -->
-  <script src="./js/translations.js"></script>
-  <script src="./js/main.js"></script>
+  <script src="js/translations.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
