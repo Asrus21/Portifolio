@@ -73,7 +73,7 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     /* ========================================================
-       4. NAVEGAÇÃO ENTRE SLIDES (CORRIGIDO)
+       4. NAVEGAÇÃO ENTRE SLIDES
        ======================================================== */
     const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
     let currentIndex = 0;
@@ -104,6 +104,10 @@
       currentIndex = index;
       updateSlideClasses();
 
+      // Quando troca de slide, leva o scroll interno do novo slide para o topo
+      const newSlide = slides[currentIndex];
+      if (newSlide) newSlide.scrollTop = 0;
+
       // Atualiza hash da URL
       const slideId = slides[currentIndex].id;
       if (slideId && history.replaceState) {
@@ -115,54 +119,43 @@
       }, TRANSITION_MS);
     }
 
-    // CORREÇÃO: Inicialização sem animação
+    // Inicialização sem animação
     function forceShowSlide(index) {
-      // Desativa temporariamente TODAS as transições
       const allElements = document.querySelectorAll('*');
       const originalTransitions = [];
-      
+
       allElements.forEach(el => {
         originalTransitions.push(el.style.transition);
         el.style.transition = 'none';
       });
-      
-      // Força reflow
-      document.body.offsetHeight;
-      
-      // Aplica o slide correto
+
+      document.body.offsetHeight; // força reflow
+
       currentIndex = index;
       updateSlideClasses();
-      
-      // Restaura transições
+
       requestAnimationFrame(() => {
         allElements.forEach((el, i) => {
           el.style.transition = originalTransitions[i];
         });
-        
-        // Dispara reveal dos cards no slide ativo
         revealCardsOfSlide(slides[currentIndex]);
-        
         console.log("[Portfolio] Slide exibido:", slides[currentIndex].id);
       });
     }
 
-    // Estado inicial - sempre mostra hero primeiro
     updateSlideClasses();
 
-    // Se tem hash, navega para o slide correto
     if (window.location.hash) {
-      // Remove a barra da tag base se presente
       const hash = window.location.hash.slice(1);
       console.log("[Portfolio] Hash detectado:", hash);
-      
-      const targetIndex = slides.findIndex(function (s) { 
+
+      const targetIndex = slides.findIndex(function (s) {
         return s.id === hash;
       });
-      
+
       console.log("[Portfolio] Target index:", targetIndex);
-      
+
       if (targetIndex !== -1) {
-        // Pequeno delay para garantir que tudo carregou
         setTimeout(() => {
           forceShowSlide(targetIndex);
         }, 50);
@@ -170,19 +163,25 @@
     }
 
     /* ---------- 5. CONTROLES DE NAVEGAÇÃO ---------- */
+
+    // Verifica se o slide atual ainda tem conteúdo pra rolar internamente
+    function canScrollInside(slide, direction) {
+      const hasInnerScroll = slide.scrollHeight > slide.clientHeight + 2;
+      if (!hasInnerScroll) return false;
+      const atTop    = slide.scrollTop <= 1;
+      const atBottom = Math.abs(slide.scrollHeight - slide.clientHeight - slide.scrollTop) < 2;
+      if (direction > 0 && !atBottom) return true;  // descendo e ainda há conteúdo abaixo
+      if (direction < 0 && !atTop) return true;     // subindo e ainda há conteúdo acima
+      return false;
+    }
+
+    // --- Mouse / trackpad ---
     let wheelLock = false;
     window.addEventListener("wheel", function (e) {
       if (e.ctrlKey) return;
 
       const active = slides[currentIndex];
-      const hasInnerScroll = active.scrollHeight > active.clientHeight;
-      if (hasInnerScroll) {
-        const atTop    = active.scrollTop === 0;
-        const atBottom = Math.abs(active.scrollHeight - active.clientHeight - active.scrollTop) < 2;
-        if ((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) {
-          return;
-        }
-      }
+      if (canScrollInside(active, e.deltaY)) return;
 
       e.preventDefault();
       if (wheelLock || isTransitioning) return;
@@ -196,7 +195,7 @@
       }
     }, { passive: false });
 
-    // Teclado
+    // --- Teclado ---
     window.addEventListener("keydown", function (e) {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       if (["ArrowDown", "PageDown", " "].includes(e.key)) {
@@ -214,18 +213,48 @@
       }
     });
 
-    // Touch
+    /* ---------- 5b. TOUCH / SWIPE (CELULAR) ---------- */
+    // Exige um deslize longo e rápido pra trocar de seção.
+    // Se a seção tem conteúdo interno, deixa rolar primeiro.
+    const SWIPE_MIN_DISTANCE = 110;  // px — deslize mínimo pra trocar de slide
+    const SWIPE_MAX_TIME     = 800;  // ms — gesto precisa ser razoavelmente rápido
+    const SWIPE_MAX_OFFAXIS  = 80;   // px — ignora se for mais horizontal que vertical
+
     let touchStartY = 0;
+    let touchStartX = 0;
+    let touchStartTime = 0;
+
     window.addEventListener("touchstart", function (e) {
       touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      touchStartTime = Date.now();
     }, { passive: true });
 
     window.addEventListener("touchend", function (e) {
       const touchEndY = e.changedTouches[0].clientY;
-      const diff = touchStartY - touchEndY;
-      if (Math.abs(diff) < 50) return;
-      if (diff > 0) goToSlide(currentIndex + 1);
-      else goToSlide(currentIndex - 1);
+      const touchEndX = e.changedTouches[0].clientX;
+      const diffY = touchStartY - touchEndY;          // positivo = deslizou pra cima
+      const diffX = touchStartX - touchEndX;
+      const elapsed = Date.now() - touchStartTime;
+
+      // Ignora gestos lentos demais (provavelmente é leitura/scroll, não swipe)
+      if (elapsed > SWIPE_MAX_TIME) return;
+
+      // Ignora se o movimento foi mais horizontal que vertical
+      if (Math.abs(diffX) > SWIPE_MAX_OFFAXIS && Math.abs(diffX) > Math.abs(diffY)) return;
+
+      // Exige deslize vertical longo o suficiente
+      if (Math.abs(diffY) < SWIPE_MIN_DISTANCE) return;
+
+      // Se a seção atual ainda pode rolar internamente nessa direção, não troca de slide
+      const active = slides[currentIndex];
+      if (canScrollInside(active, diffY)) return;
+
+      if (diffY > 0) {
+        goToSlide(currentIndex + 1);
+      } else {
+        goToSlide(currentIndex - 1);
+      }
     }, { passive: true });
 
     /* ---------- 6. LINKS DE ÂNCORA ---------- */
@@ -233,11 +262,10 @@
       link.addEventListener("click", function (e) {
         const href = link.getAttribute("href");
         if (!href || href === "#") return;
-        
-        // Extrai o ID do hash, removendo qualquer caminho da tag base
+
         const id = href.split('#').pop();
         const targetIndex = slides.findIndex(function (s) { return s.id === id; });
-        
+
         if (targetIndex === -1) return;
         e.preventDefault();
         goToSlide(targetIndex);
@@ -283,7 +311,7 @@
         }, 300 + idx * 60);
       });
     }
-    
+
     function hideCardsOfSlide(slide) {
       slide.querySelectorAll(".reveal").forEach(function (card) {
         card.classList.remove("in-view");
