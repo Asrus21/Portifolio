@@ -282,12 +282,7 @@ ul { list-style: none; }
   z-index: 0;
 }
 
-/* --- Seções --- */
-/* --- Slides empilhados (modo apresentação) ---
-   Cada seção ocupa a tela inteira e fica posicionada absolutamente.
-   O JS controla qual está ativa, e ambas (atual + próxima) se movem
-   simultaneamente quando o usuário usa o scroll/teclado.
-*/
+/* --- Slides empilhados (modo apresentação) --- */
 .slides-container {
   position: relative;
   width: 100%;
@@ -303,10 +298,14 @@ ul { list-style: none; }
   width: 100%;
   height: 100vh;
   padding: 7rem 2.5rem 4rem;
+
+  /* CORREÇÃO DO SCROLL:
+     - overflow-y: auto permite rolar dentro da seção
+     - o conteúdo é centralizado pela margem automática do wrapper interno,
+       NÃO por justify-content: center (que cortava topo/base) */
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  -webkit-overflow-scrolling: touch;
+  display: block;
 
   /* Esconde a barra de rolagem visualmente (mantém o scroll funcional) */
   scrollbar-width: none;          /* Firefox */
@@ -323,6 +322,18 @@ ul { list-style: none; }
 .hero::-webkit-scrollbar,
 .section::-webkit-scrollbar {
   display: none;
+}
+
+/* Wrapper interno: centraliza o conteúdo quando ele é menor que a tela,
+   mas permite que ele cresça e seja rolável quando é maior */
+.section-inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: var(--container);
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Slide ATIVO: no centro da tela */
@@ -350,14 +361,12 @@ ul { list-style: none; }
 /* ============================================
    CASCATA INTERNA DOS ELEMENTOS DENTRO DO SLIDE
    ============================================ */
-
-/* Estado base dos filhos diretos das seções: empurrados pra baixo, invisíveis */
-.section > .section-head,
-.section > .about-grid,
-.section > .skills-grid,
-.section > .projects-grid,
-.section > .contact-lead,
-.section > .contact-grid,
+.section-inner > .section-head,
+.section-inner > .about-grid,
+.section-inner > .skills-grid,
+.section-inner > .projects-grid,
+.section-inner > .contact-lead,
+.section-inner > .contact-grid,
 .hero > .hero-inner {
   opacity: 0;
   transform: translateY(60px);
@@ -365,54 +374,45 @@ ul { list-style: none; }
               transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Slide ATIVO: revela os filhos em cascata */
-.slide-active > .section-head,
-.slide-active > .about-grid,
-.slide-active > .skills-grid,
-.slide-active > .projects-grid,
-.slide-active > .contact-lead,
-.slide-active > .contact-grid,
+.slide-active .section-inner > .section-head,
+.slide-active .section-inner > .about-grid,
+.slide-active .section-inner > .skills-grid,
+.slide-active .section-inner > .projects-grid,
+.slide-active .section-inner > .contact-lead,
+.slide-active .section-inner > .contact-grid,
 .slide-active > .hero-inner {
   opacity: 1;
   transform: translateY(0);
 }
 
 /* Atrasos para criar a cascata (de cima para baixo na entrada) */
-.slide-active > *:nth-child(1) { transition-delay: 250ms; }
-.slide-active > *:nth-child(2) { transition-delay: 400ms; }
-.slide-active > *:nth-child(3) { transition-delay: 550ms; }
+.slide-active .section-inner > *:nth-child(1) { transition-delay: 250ms; }
+.slide-active .section-inner > *:nth-child(2) { transition-delay: 400ms; }
+.slide-active .section-inner > *:nth-child(3) { transition-delay: 550ms; }
 
-/* Slide ANTERIOR: filhos saem em cascata invertida (último primeiro) */
-.slide-prev > .section-head,
-.slide-prev > .about-grid,
-.slide-prev > .skills-grid,
-.slide-prev > .projects-grid,
-.slide-prev > .contact-lead,
-.slide-prev > .contact-grid,
+/* Slide ANTERIOR: filhos saem em cascata */
+.slide-prev .section-inner > .section-head,
+.slide-prev .section-inner > .about-grid,
+.slide-prev .section-inner > .skills-grid,
+.slide-prev .section-inner > .projects-grid,
+.slide-prev .section-inner > .contact-lead,
+.slide-prev .section-inner > .contact-grid,
 .slide-prev > .hero-inner {
   opacity: 0;
   transform: translateY(-60px);
 }
 
-/* Slide PRÓXIMO: filhos voltam ao estado inicial (preparados) */
-.slide-next > .section-head,
-.slide-next > .about-grid,
-.slide-next > .skills-grid,
-.slide-next > .projects-grid,
-.slide-next > .contact-lead,
-.slide-next > .contact-grid,
+/* Slide PRÓXIMO: filhos no estado inicial */
+.slide-next .section-inner > .section-head,
+.slide-next .section-inner > .about-grid,
+.slide-next .section-inner > .skills-grid,
+.slide-next .section-inner > .projects-grid,
+.slide-next .section-inner > .contact-lead,
+.slide-next .section-inner > .contact-grid,
 .slide-next > .hero-inner {
   opacity: 0;
   transform: translateY(60px);
   transition-delay: 0ms !important;
-}
-
-/* Conteúdo interno das seções fica centralizado e com largura limitada */
-.section > * {
-  max-width: var(--container);
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 /* Hero mantém comportamento próprio */
@@ -659,79 +659,6 @@ ul { list-style: none; }
 }
 
 /* ============================================
-   VISUAL 2 — DISCO + ONDAS (Spotify Command)
-   ============================================ */
-.project-visual-spotify {
-  background: radial-gradient(circle at 50% 60%, #1ed760 0%, #0d6332 70%, #0a3d20 100%);
-  display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-}
-.project-visual-spotify .spotify-disc {
-  position: relative;
-  width: 110px;
-  height: 110px;
-  display: grid;
-  place-items: center;
-}
-.project-visual-spotify .disc-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.4);
-  animation: spin 5s linear infinite;
-}
-.project-visual-spotify .disc-ring:nth-child(1) {
-  width: 100%;
-  height: 100%;
-  border-top-color: white;
-}
-.project-visual-spotify .disc-ring.inner {
-  width: 65%;
-  height: 65%;
-  border-style: dashed;
-  animation-duration: 8s;
-  animation-direction: reverse;
-}
-.project-visual-spotify .disc-center {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 0 18px rgba(255,255,255,0.7);
-}
-.project-visual-spotify .spotify-wave {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 22px;
-}
-.project-visual-spotify .spotify-wave i {
-  width: 3px;
-  background: white;
-  border-radius: 2px;
-  animation: waveBar 1.2s ease-in-out infinite;
-}
-.project-visual-spotify .spotify-wave i:nth-child(1) { height: 50%; animation-delay: 0s; }
-.project-visual-spotify .spotify-wave i:nth-child(2) { height: 80%; animation-delay: 0.1s; }
-.project-visual-spotify .spotify-wave i:nth-child(3) { height: 35%; animation-delay: 0.2s; }
-.project-visual-spotify .spotify-wave i:nth-child(4) { height: 95%; animation-delay: 0.3s; }
-.project-visual-spotify .spotify-wave i:nth-child(5) { height: 55%; animation-delay: 0.4s; }
-.project-visual-spotify .spotify-wave i:nth-child(6) { height: 75%; animation-delay: 0.5s; }
-.project-visual-spotify .spotify-wave i:nth-child(7) { height: 40%; animation-delay: 0.6s; }
-@keyframes waveBar {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ============================================
    VISUAL 3 — PÓDIO DE RANKING (Rank LoL/TFT)
    ============================================ */
 .project-visual-rank {
@@ -793,6 +720,9 @@ ul { list-style: none; }
 @keyframes crownFloat {
   0%, 100% { transform: translateX(-50%) translateY(0); }
   50% { transform: translateX(-50%) translateY(-6px); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .project-body { padding: 1.75rem; flex: 1; display: flex; flex-direction: column; }
@@ -886,6 +816,7 @@ ul { list-style: none; }
   border-top: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.88rem;
+  margin-top: 3rem;
 }
 .footer-small {
   margin-top: 0.5rem;
@@ -893,7 +824,7 @@ ul { list-style: none; }
   font-size: 0.78rem;
 }
 
-/* --- Botão voltar ao topo (opacidade controlada via JS para fade gradual) --- */
+/* --- Botão voltar ao topo (opacidade controlada via JS) --- */
 .back-to-top {
   position: fixed;
   bottom: 2rem;
@@ -924,12 +855,15 @@ ul { list-style: none; }
   .nav { order: 3; flex-basis: 100%; }
   .nav ul { justify-content: center; padding-top: 0.5rem; }
 
-  .hero { padding: 9rem 1.5rem 4rem; }
-  .section { padding: 4.5rem 1.5rem; }
+  /* Mais espaço no topo (header tem 2 linhas no mobile) e na base */
+  .hero { padding: 10rem 1.5rem 4rem; }
+  .section { padding: 10rem 1.5rem 5rem; }
 
   .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
   .about-photo { max-width: 260px; }
   .about-meta li { grid-template-columns: 1fr; gap: 0.25rem; }
+
+  .section-head { margin-bottom: 2rem; }
 
   .back-to-top { bottom: 1.25rem; right: 1.25rem; }
 }
@@ -941,7 +875,7 @@ ul { list-style: none; }
   .btn { width: 100%; justify-content: center; }
 }
 
-/* --- Reveal dos cards (mantido para animar conteúdo interno) --- */
+/* --- Reveal dos cards --- */
 .reveal {
   opacity: 0;
   transform: translateY(24px);
