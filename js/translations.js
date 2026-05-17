@@ -9,7 +9,7 @@ const translations = {
     "nav.projects": "Projetos",
     "nav.contact": "Contato",
 
-    "hero.eyebrow": "Portfólio · 2025",
+    "hero.eyebrow": "Portfólio",
     "hero.greet": "Olá, eu sou",
     "hero.role": "Desenvolvedor de Software · Salvador, BA",
     "hero.cta1": "Ver projetos",
@@ -56,7 +56,7 @@ const translations = {
     "nav.projects": "Projects",
     "nav.contact": "Contact",
 
-    "hero.eyebrow": "Portfolio · 2025",
+    "hero.eyebrow": "Portfolio",
     "hero.greet": "Hi, I'm",
     "hero.role": "Software Developer · Salvador, BA",
     "hero.cta1": "See projects",
