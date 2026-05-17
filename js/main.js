@@ -73,88 +73,102 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     /* ========================================================
-       4. NAVEGAÇÃO ENTRE SLIDES (estilo React Navigation push)
-       ======================================================== */
-    const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
-    let currentIndex = 0;
-    let isTransitioning = false;
-    const TRANSITION_MS = 850;
+   4. NAVEGAÇÃO ENTRE SLIDES (estilo React Navigation push)
+   ======================================================== */
+   const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
+   let currentIndex = 0;
+   let isTransitioning = false;
+   const TRANSITION_MS = 850;
 
-    function updateSlideClasses() {
-      slides.forEach(function (slide, i) {
-        slide.classList.remove("slide-active", "slide-prev", "slide-next");
-        if (i === currentIndex) {
-          slide.classList.add("slide-active");
-        } else if (i < currentIndex) {
-          slide.classList.add("slide-prev");
-        } else {
-          slide.classList.add("slide-next");
-        }
-      });
+   function updateSlideClasses() {
+     slides.forEach(function (slide, i) {
+       slide.classList.remove("slide-active", "slide-prev", "slide-next");
+    if (i === currentIndex) {
+      slide.classList.add("slide-active");
+    } else if (i < currentIndex) {
+      slide.classList.add("slide-prev");
+    } else {
+      slide.classList.add("slide-next");
     }
+  });
+}
 
-    function goToSlide(index) {
-      if (isTransitioning) return;
-      if (index < 0 || index >= slides.length) return;
-      if (index === currentIndex) return;
+   function goToSlide(index) {
+     if (isTransitioning) return;
+     if (index < 0 || index >= slides.length) return;
+     if (index === currentIndex) return;
 
-      isTransitioning = true;
-      currentIndex = index;
-      updateSlideClasses();
+   isTransitioning = true;
+   currentIndex = index;
+   updateSlideClasses();
 
-      // Atualiza hash da URL para refletir a seção atual (sem disparar scroll)
-      const slideId = slides[currentIndex].id;
-      if (slideId && history.replaceState) {
-        history.replaceState(null, "", "#" + slideId);
-      }
+  // Atualiza hash da URL para refletir a seção atual
+  const slideId = slides[currentIndex].id;
+  if (slideId && history.replaceState) {
+    history.replaceState(null, "", "#" + slideId);
+  }
 
-      setTimeout(function () {
-        isTransitioning = false;
-      }, TRANSITION_MS);
-    }
+  setTimeout(function () {
+    isTransitioning = false;
+  }, TRANSITION_MS);
+}
 
-    // Função para inicializar slide sem animação (para carregamento direto)
+// Função para inicializar slide sem animação
 function initSlideWithoutAnimation(index) {
-  // Remove temporariamente as transições
+  // Remove transições temporariamente
   slides.forEach(slide => {
     slide.style.transition = 'none';
-    // Também remove transições dos filhos
-    const children = slide.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner');
-    children.forEach(child => {
-      child.style.transition = 'none';
-    });
   });
   
-  // Força um reflow
+  // Remove transições dos elementos internos também
+  document.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner').forEach(el => {
+    el.style.transition = 'none';
+  });
+  
+  // Força reflow
   slides[0].offsetHeight;
   
-  // Aplica as classes sem animação
+  // Aplica classes
   currentIndex = index;
   updateSlideClasses();
   
-  // Reaplica as transições depois de um frame
+  // Restaura transições
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       slides.forEach(slide => {
         slide.style.transition = '';
-        const children = slide.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner');
-        children.forEach(child => {
-          child.style.transition = '';
-        });
       });
+      document.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner').forEach(el => {
+        el.style.transition = '';
+      });
+      
+      // Garante que o slide ativo está visível
+      console.log("[Portfolio] Slide inicializado:", slides[currentIndex].id);
     });
   });
 }
 
-// Estado inicial
+// INICIALIZAÇÃO
+console.log("[Portfolio] Slides encontrados:", slides.length, slides.map(s => s.id));
+
+// Sempre começa com o primeiro slide
 updateSlideClasses();
 
-// Se a URL tem um hash ao abrir, vai direto pro slide certo SEM ANIMAÇÃO
+// Se tem hash na URL, navega para o slide correto
 if (window.location.hash) {
   const targetId = window.location.hash.slice(1);
-  const targetIndex = slides.findIndex(function (s) { return s.id === targetId; });
-  if (targetIndex !== -1 && targetIndex !== 0) {
+  console.log("[Portfolio] Hash detectado:", targetId);
+  
+  const targetIndex = slides.findIndex(function (s) { 
+    return s.id === targetId; 
+  });
+  
+  console.log("[Portfolio] Target index:", targetIndex);
+  
+  if (targetIndex !== -1) {
     initSlideWithoutAnimation(targetIndex);
+  } else {
+    console.warn("[Portfolio] Slide não encontrado para hash:", targetId);
   }
 }
 
