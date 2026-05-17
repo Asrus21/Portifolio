@@ -113,18 +113,50 @@
       }, TRANSITION_MS);
     }
 
-    // Estado inicial
-    updateSlideClasses();
+    // Função para inicializar slide sem animação (para carregamento direto)
+function initSlideWithoutAnimation(index) {
+  // Remove temporariamente as transições
+  slides.forEach(slide => {
+    slide.style.transition = 'none';
+    // Também remove transições dos filhos
+    const children = slide.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner');
+    children.forEach(child => {
+      child.style.transition = 'none';
+    });
+  });
+  
+  // Força um reflow
+  slides[0].offsetHeight;
+  
+  // Aplica as classes sem animação
+  currentIndex = index;
+  updateSlideClasses();
+  
+  // Reaplica as transições depois de um frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      slides.forEach(slide => {
+        slide.style.transition = '';
+        const children = slide.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner');
+        children.forEach(child => {
+          child.style.transition = '';
+        });
+      });
+    });
+  });
+}
 
-    // Se a URL tem um hash ao abrir, vai direto pro slide certo
-    if (window.location.hash) {
-      const targetId = window.location.hash.slice(1);
-      const targetIndex = slides.findIndex(function (s) { return s.id === targetId; });
-      if (targetIndex !== -1) {
-        currentIndex = targetIndex;
-        updateSlideClasses();
-      }
-    }
+// Estado inicial
+updateSlideClasses();
+
+// Se a URL tem um hash ao abrir, vai direto pro slide certo SEM ANIMAÇÃO
+if (window.location.hash) {
+  const targetId = window.location.hash.slice(1);
+  const targetIndex = slides.findIndex(function (s) { return s.id === targetId; });
+  if (targetIndex !== -1 && targetIndex !== 0) {
+    initSlideWithoutAnimation(targetIndex);
+  }
+}
 
     /* ---------- 5. CONTROLES DE NAVEGAÇÃO ---------- */
 
