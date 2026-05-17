@@ -216,7 +216,7 @@
     /* ---------- 5b. TOUCH / SWIPE (CELULAR) ---------- */
     // Exige um deslize longo e rápido pra trocar de seção.
     // Se a seção tem conteúdo interno, deixa rolar primeiro.
-    const SWIPE_MIN_DISTANCE = 110;  // px — deslize mínimo pra trocar de slide
+    const SWIPE_MIN_DISTANCE = 150;  // px — deslize mínimo pra trocar de slide
     const SWIPE_MAX_TIME     = 800;  // ms — gesto precisa ser razoavelmente rápido
     const SWIPE_MAX_OFFAXIS  = 80;   // px — ignora se for mais horizontal que vertical
 
