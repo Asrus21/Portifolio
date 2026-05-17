@@ -23,7 +23,7 @@ const translations = {
     "about.educationLabel": "Formação",
     "about.education": "Análise e Desenvolvimento de Sistemas · Faculdade Visconde de Cairu (2022.2 – 2025.1)",
     "about.languagesLabel": "Idiomas",
-    "about.languages": "Português (nativo) · Inglês básico",
+    "about.languages": "Português (nativo) · Inglês Intermediário (B1)",
 
     "skills.title": "Habilidades",
     "skills.html": "Estruturação semântica de páginas web, formulários e acessibilidade básica.",
@@ -70,7 +70,7 @@ const translations = {
     "about.educationLabel": "Education",
     "about.education": "Systems Analysis and Development · Faculdade Visconde de Cairu (2022.2 – 2025.1)",
     "about.languagesLabel": "Languages",
-    "about.languages": "Portuguese (native) · Basic English",
+    "about.languages": "Portuguese (native) · intermediate English (B1)",
 
     "skills.title": "Skills",
     "skills.html": "Semantic web page structure, forms and basic accessibility.",
