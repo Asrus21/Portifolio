@@ -73,121 +73,114 @@
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     /* ========================================================
-   4. NAVEGAÇÃO ENTRE SLIDES (estilo React Navigation push)
-   ======================================================== */
-   const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
-   let currentIndex = 0;
-   let isTransitioning = false;
-   const TRANSITION_MS = 850;
+       4. NAVEGAÇÃO ENTRE SLIDES (CORRIGIDO)
+       ======================================================== */
+    const slides = Array.from(document.querySelectorAll(".slides-container > .hero, .slides-container > .section"));
+    let currentIndex = 0;
+    let isTransitioning = false;
+    const TRANSITION_MS = 850;
 
-   function updateSlideClasses() {
-     slides.forEach(function (slide, i) {
-       slide.classList.remove("slide-active", "slide-prev", "slide-next");
-    if (i === currentIndex) {
-      slide.classList.add("slide-active");
-    } else if (i < currentIndex) {
-      slide.classList.add("slide-prev");
-    } else {
-      slide.classList.add("slide-next");
-    }
-  });
-}
+    console.log("[Portfolio] Slides encontrados:", slides.length, slides.map(s => s.id));
 
-   function goToSlide(index) {
-     if (isTransitioning) return;
-     if (index < 0 || index >= slides.length) return;
-     if (index === currentIndex) return;
-
-   isTransitioning = true;
-   currentIndex = index;
-   updateSlideClasses();
-
-  // Atualiza hash da URL para refletir a seção atual
-  const slideId = slides[currentIndex].id;
-  if (slideId && history.replaceState) {
-    history.replaceState(null, "", "#" + slideId);
-  }
-
-  setTimeout(function () {
-    isTransitioning = false;
-  }, TRANSITION_MS);
-}
-
-// Função para inicializar slide sem animação
-function initSlideWithoutAnimation(index) {
-  // Remove transições temporariamente
-  slides.forEach(slide => {
-    slide.style.transition = 'none';
-  });
-  
-  // Remove transições dos elementos internos também
-  document.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner').forEach(el => {
-    el.style.transition = 'none';
-  });
-  
-  // Força reflow
-  slides[0].offsetHeight;
-  
-  // Aplica classes
-  currentIndex = index;
-  updateSlideClasses();
-  
-  // Restaura transições
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      slides.forEach(slide => {
-        slide.style.transition = '';
+    function updateSlideClasses() {
+      slides.forEach(function (slide, i) {
+        slide.classList.remove("slide-active", "slide-prev", "slide-next");
+        if (i === currentIndex) {
+          slide.classList.add("slide-active");
+        } else if (i < currentIndex) {
+          slide.classList.add("slide-prev");
+        } else {
+          slide.classList.add("slide-next");
+        }
       });
-      document.querySelectorAll('.section-head, .about-grid, .skills-grid, .projects-grid, .contact-lead, .contact-grid, .hero-inner').forEach(el => {
-        el.style.transition = '';
+    }
+
+    function goToSlide(index) {
+      if (isTransitioning) return;
+      if (index < 0 || index >= slides.length) return;
+      if (index === currentIndex) return;
+
+      isTransitioning = true;
+      currentIndex = index;
+      updateSlideClasses();
+
+      // Atualiza hash da URL
+      const slideId = slides[currentIndex].id;
+      if (slideId && history.replaceState) {
+        history.replaceState(null, "", "#" + slideId);
+      }
+
+      setTimeout(function () {
+        isTransitioning = false;
+      }, TRANSITION_MS);
+    }
+
+    // CORREÇÃO: Inicialização sem animação
+    function forceShowSlide(index) {
+      // Desativa temporariamente TODAS as transições
+      const allElements = document.querySelectorAll('*');
+      const originalTransitions = [];
+      
+      allElements.forEach(el => {
+        originalTransitions.push(el.style.transition);
+        el.style.transition = 'none';
       });
       
-      // Garante que o slide ativo está visível
-      console.log("[Portfolio] Slide inicializado:", slides[currentIndex].id);
-    });
-  });
-}
+      // Força reflow
+      document.body.offsetHeight;
+      
+      // Aplica o slide correto
+      currentIndex = index;
+      updateSlideClasses();
+      
+      // Restaura transições
+      requestAnimationFrame(() => {
+        allElements.forEach((el, i) => {
+          el.style.transition = originalTransitions[i];
+        });
+        
+        // Dispara reveal dos cards no slide ativo
+        revealCardsOfSlide(slides[currentIndex]);
+        
+        console.log("[Portfolio] Slide exibido:", slides[currentIndex].id);
+      });
+    }
 
-// INICIALIZAÇÃO
-console.log("[Portfolio] Slides encontrados:", slides.length, slides.map(s => s.id));
+    // Estado inicial - sempre mostra hero primeiro
+    updateSlideClasses();
 
-// Sempre começa com o primeiro slide
-updateSlideClasses();
-
-// Se tem hash na URL, navega para o slide correto
-if (window.location.hash) {
-  const targetId = window.location.hash.slice(1);
-  console.log("[Portfolio] Hash detectado:", targetId);
-  
-  const targetIndex = slides.findIndex(function (s) { 
-    return s.id === targetId; 
-  });
-  
-  console.log("[Portfolio] Target index:", targetIndex);
-  
-  if (targetIndex !== -1) {
-    initSlideWithoutAnimation(targetIndex);
-  } else {
-    console.warn("[Portfolio] Slide não encontrado para hash:", targetId);
-  }
-}
+    // Se tem hash, navega para o slide correto
+    if (window.location.hash) {
+      // Remove a barra da tag base se presente
+      const hash = window.location.hash.slice(1);
+      console.log("[Portfolio] Hash detectado:", hash);
+      
+      const targetIndex = slides.findIndex(function (s) { 
+        return s.id === hash;
+      });
+      
+      console.log("[Portfolio] Target index:", targetIndex);
+      
+      if (targetIndex !== -1) {
+        // Pequeno delay para garantir que tudo carregou
+        setTimeout(() => {
+          forceShowSlide(targetIndex);
+        }, 50);
+      }
+    }
 
     /* ---------- 5. CONTROLES DE NAVEGAÇÃO ---------- */
-
-    // Roda do mouse — avança ou volta um slide
     let wheelLock = false;
     window.addEventListener("wheel", function (e) {
-      if (e.ctrlKey) return; // permite zoom
+      if (e.ctrlKey) return;
 
-      // Se a seção atual tem rolagem interna (conteúdo maior que a tela),
-      // deixa o scroll nativo funcionar dentro dela
       const active = slides[currentIndex];
       const hasInnerScroll = active.scrollHeight > active.clientHeight;
       if (hasInnerScroll) {
         const atTop    = active.scrollTop === 0;
         const atBottom = Math.abs(active.scrollHeight - active.clientHeight - active.scrollTop) < 2;
         if ((e.deltaY > 0 && !atBottom) || (e.deltaY < 0 && !atTop)) {
-          return; // permite scroll interno
+          return;
         }
       }
 
@@ -203,7 +196,7 @@ if (window.location.hash) {
       }
     }, { passive: false });
 
-    // Teclado — setas e PageUp/PageDown
+    // Teclado
     window.addEventListener("keydown", function (e) {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
       if (["ArrowDown", "PageDown", " "].includes(e.key)) {
@@ -221,7 +214,7 @@ if (window.location.hash) {
       }
     });
 
-    // Touch (mobile) — swipe vertical
+    // Touch
     let touchStartY = 0;
     window.addEventListener("touchstart", function (e) {
       touchStartY = e.touches[0].clientY;
@@ -230,33 +223,35 @@ if (window.location.hash) {
     window.addEventListener("touchend", function (e) {
       const touchEndY = e.changedTouches[0].clientY;
       const diff = touchStartY - touchEndY;
-      if (Math.abs(diff) < 50) return; // ignora toques pequenos
+      if (Math.abs(diff) < 50) return;
       if (diff > 0) goToSlide(currentIndex + 1);
       else goToSlide(currentIndex - 1);
     }, { passive: true });
 
-    /* ---------- 6. LINKS DE ÂNCORA NAVEGAM PARA O SLIDE CORRETO ---------- */
+    /* ---------- 6. LINKS DE ÂNCORA ---------- */
     document.querySelectorAll('a[href^="#"]').forEach(function (link) {
       link.addEventListener("click", function (e) {
-        const id = link.getAttribute("href");
-        if (!id || id === "#") return;
-        const targetIndex = slides.findIndex(function (s) { return s.id === id.slice(1); });
+        const href = link.getAttribute("href");
+        if (!href || href === "#") return;
+        
+        // Extrai o ID do hash, removendo qualquer caminho da tag base
+        const id = href.split('#').pop();
+        const targetIndex = slides.findIndex(function (s) { return s.id === id; });
+        
         if (targetIndex === -1) return;
         e.preventDefault();
         goToSlide(targetIndex);
       });
     });
 
-    /* ---------- 7. BOTÃO VOLTAR AO TOPO (fade gradual baseado no slide) ---------- */
+    /* ---------- 7. BOTÃO VOLTAR AO TOPO ---------- */
     const backToTop = document.getElementById("backToTop");
     if (backToTop) {
       function updateBackToTop() {
-        // Esmaece conforme avança pelos slides
         let opacity;
         if (currentIndex === 0) {
           opacity = 0;
         } else {
-          // 1 slide = 0.4, 2 = 0.7, 3+ = 1
           opacity = Math.min(1, currentIndex * 0.35 + 0.05);
         }
         backToTop.style.opacity = opacity;
@@ -264,7 +259,6 @@ if (window.location.hash) {
         backToTop.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
       }
 
-      // Atualiza sempre que o slide muda — observamos via MutationObserver
       const moBack = new MutationObserver(updateBackToTop);
       slides.forEach(function (s) {
         moBack.observe(s, { attributes: true, attributeFilter: ["class"] });
@@ -276,22 +270,20 @@ if (window.location.hash) {
       });
     }
 
-    /* ---------- 8. REVEAL DOS CARDS QUANDO SLIDE FICA ATIVO ---------- */
-    document.querySelectorAll(
-      ".skill-card, .project-card, .contact-card"
-    ).forEach(function (el) {
+    /* ---------- 8. REVEAL DOS CARDS ---------- */
+    document.querySelectorAll(".skill-card, .project-card, .contact-card").forEach(function (el) {
       el.classList.add("reveal");
     });
 
-    // Observa mudança de classe nos slides para disparar reveal dos cards
     function revealCardsOfSlide(slide) {
       const cards = slide.querySelectorAll(".reveal");
       cards.forEach(function (card, idx) {
         setTimeout(function () {
           card.classList.add("in-view");
-        }, 300 + idx * 60); // espera o push + cascata
+        }, 300 + idx * 60);
       });
     }
+    
     function hideCardsOfSlide(slide) {
       slide.querySelectorAll(".reveal").forEach(function (card) {
         card.classList.remove("in-view");
@@ -311,7 +303,6 @@ if (window.location.hash) {
 
     slides.forEach(function (slide) {
       slideStateObserver.observe(slide, { attributes: true, attributeFilter: ["class"] });
-      // Dispara para o slide inicial
       if (slide.classList.contains("slide-active")) {
         revealCardsOfSlide(slide);
       }
